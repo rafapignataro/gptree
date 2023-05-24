@@ -1,5 +1,5 @@
 {
-  "name": "flow-api",
+  "name": "gptree",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,17 +9,31 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.1.0",
+    "@radix-ui/react-label": "^2.0.1",
+    "@radix-ui/react-slot": "^1.0.1",
     "@types/node": "20.2.1",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",
     "autoprefixer": "10.4.14",
+    "class-variance-authority": "^0.6.0",
+    "clsx": "^1.2.1",
     "eslint": "8.40.0",
     "eslint-config-next": "13.4.3",
+    "eventsource-parser": "^1.0.0",
+    "lucide-react": "^0.220.0",
     "next": "13.4.3",
+    "node-fetch": "^3.3.1",
     "postcss": "8.4.23",
     "react": "18.2.0",
+    "react-archer": "^4.2.3",
     "react-dom": "18.2.0",
+    "react-hook-form": "^7.43.9",
+    "tailwind-merge": "^1.12.0",
     "tailwindcss": "3.3.2",
-    "typescript": "5.0.4"
+    "tailwindcss-animate": "^1.0.5",
+    "typescript": "5.0.4",
+    "zod": "^3.21.4",
+    "zustand": "^4.3.8"
   }
 }
