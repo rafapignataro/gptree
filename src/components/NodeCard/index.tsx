@@ -1,22 +1,20 @@
 'use client';
 
-import React, { useEffect, useMemo } from 'react';
-import { useChat, Message } from 'ai/react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useChat } from 'ai/react';
 import { Plus, X } from 'lucide-react';
 import { ArcherContainerRef, ArcherElement } from 'react-archer';
 import Draggable from 'react-draggable'; //
 import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { dark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { AnchorPositionType } from 'react-archer/lib/types';
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 
 import { Node, findGenealogyById, useNodes } from '@/store/nodes';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { AppMessage, useMessages } from '@/store/messages';
 
 type NodeCardProps = {
   node: Node;
@@ -31,18 +29,23 @@ type NodeCardProps = {
 }
 
 export function NodeCard({ node, relations, container }: NodeCardProps) {
-  const nodeTree = useNodes(state => state.nodeTree);
+  useNodes(state => state.nodeTree);
   const createNode = useNodes(state => state.createNode);
   const deleteNode = useNodes(state => state.deleteNode);
-  const addMessageToNode = useNodes(state => state.addMessageToNode);
+
+  const createMessage = useMessages(state => state.createMessage)
+
+  const getMessagesByNodeId = useMessages(state => state.getMessagesByNodeId);
+  const getContextMessagesByNodeId = useMessages(state => state.getContextMessagesByNodeId);
 
   async function handleAddNode() { createNode(node.id); };
 
-  async function handleDeleteNode() { 
-    if (node.parentId) deleteNode(node); 
-  };
+  async function handleDeleteNode() {  if (node.parentId) deleteNode(node); };
 
-  async function handleOnMessage(message: Message) { addMessageToNode(node.id, message); };
+  async function handleOnMessage(message: AppMessage) { createMessage(message); };
+
+  const messages = getMessagesByNodeId(node.id);
+  const contextMessages = getContextMessagesByNodeId(node.id);
 
   return (
     <Draggable
@@ -80,8 +83,8 @@ export function NodeCard({ node, relations, container }: NodeCardProps) {
                 </Button>
               </div>
             </div>
-            <MessageList messages={node.messages} />
-            <SubmitMessageContainer preMessages={node.messages} onMessage={handleOnMessage} />
+            <MessageList messages={messages} />
+            <SubmitMessageContainer contextMessages={contextMessages} onMessage={handleOnMessage} nodeId={node.id} />
           </div>
         </ArcherElement>
       </div>
@@ -90,7 +93,7 @@ export function NodeCard({ node, relations, container }: NodeCardProps) {
 }
 
 type MessageListProps = {
-  messages: Message[];
+  messages: AppMessage[];
 }
 
 function MessageList({ messages }: MessageListProps) {
@@ -117,15 +120,19 @@ function MessageList({ messages }: MessageListProps) {
 }
 
 type SubmitMessageContainerProps = {
-  preMessages?: Message[];
-  onMessage: (message: Message) => void;
+  nodeId: string;
+  contextMessages?: AppMessage[];
+  onMessage: (message: AppMessage) => void;
 }
 
-function SubmitMessageContainer({ preMessages = [], onMessage }: SubmitMessageContainerProps) {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({
+function SubmitMessageContainer({ nodeId, contextMessages = [], onMessage }: SubmitMessageContainerProps) {
+  const { messages, input, handleInputChange, handleSubmit, setMessages } = useChat({
     api: '/api/message',    
-    initialMessages: [...preMessages],
-    onFinish: (message) => onMessage(message),
+    initialMessages: contextMessages,
+    onFinish: (message) => {
+      onMessage({ nodeId, ...message});
+      setMessages([]);
+    },
   });
 
   async function handleSendMessage(e: React.FormEvent<HTMLFormElement>) {
@@ -133,15 +140,16 @@ function SubmitMessageContainer({ preMessages = [], onMessage }: SubmitMessageCo
       id: crypto.randomUUID(),
       role: 'user',
       content: input,
+      nodeId,
     });
 
     handleSubmit(e);
   }
 
-  const externalMessageIds = preMessages.map(m => m.id);
-  const messagesToRender = messages.filter(message => !externalMessageIds.includes(message.id));
+  const contextMessageIds = contextMessages.map(m => m.id);
+  const filteredMessages = messages.filter(message => !contextMessageIds.includes(message.id));
 
-  const lastMessage = messagesToRender[messagesToRender.length - 1];
+  const lastMessage = filteredMessages[filteredMessages.length - 1];
 
   return (
     <div className="flex flex-col w-full mt-4">

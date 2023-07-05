@@ -8,10 +8,14 @@ import { TREE_SEP, useNodes } from '@/store/nodes';
 
 import { Button } from '@/components/ui/button';
 import { NodeCard } from '@/components/NodeCard';
+import { useMessages } from '@/store/messages';
 
 export const ArcContainer = () => {
-  const nodeTree = useNodes(state => state.nodeTree);
+  useNodes(state => state.nodeTree);
+
   const flattenTree = useNodes(state => state.flattenTree);
+
+  const messages = useMessages(state => state.messages);
 
   const containerRef = useRef<ArcherContainerRef | null>(null);
 
@@ -46,8 +50,6 @@ export const ArcContainer = () => {
   }
 
   const nodes = flattenTree();
-
-  console.log('nodeTree', nodeTree);
   
   return (
     <ArcherContainer ref={containerRef} strokeColor="#4f4f4f" strokeWidth={2} className="h-full w-full">

@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { Message } from 'ai';
 
 export type Node = {
   id: string;
@@ -8,7 +7,6 @@ export type Node = {
   nodes: Node[];
   root: boolean;
   parentId: string | null;
-  messages: Message[];
 }
 
 type NodeTreeState = {
@@ -16,7 +14,6 @@ type NodeTreeState = {
   flattenTree: () => Node[];
   createNode: (parentId: string) => void;
   deleteNode: (node: Node) => void;
-  addMessageToNode: (id: string, message: Message) => void
 }
 
 export const TREE_SEP = '_'
@@ -42,12 +39,12 @@ export const useNodes = create<NodeTreeState>((set, get) => ({
     }],
   },
   flattenTree: () => flattenTree(get().nodeTree),
-  createNode: (parentId: string) => set(state => {
-    const rawNodeTree = { ...state.nodeTree };
+  createNode: (parentId: string) => {
+    const rawNodeTree = { ...get().nodeTree };
 
     const parentNode = findNodeById(parentId, rawNodeTree);
 
-    if (!parentNode) return state;
+    if (!parentNode) return;
 
     const [lastSibling] = findSiblingsByParentId(parentId, rawNodeTree);
 
@@ -61,26 +58,26 @@ export const useNodes = create<NodeTreeState>((set, get) => ({
       nodes: [],
       root: false,
       parentId,
-      messages: []
     });
 
     const genealogy = findGenealogyById(nodeId, rawNodeTree);
 
-    const messages: Message[] = [];
+    // const messages: Message[] = [];
   
-    genealogy.forEach(node => node.messages.forEach(message => messages.push({
-      ...message,
-      role: 'system'
-    })));
+    // genealogy.forEach(node => node.messages.forEach(message => messages.push({
+    //   ...message,
+    //   role: 'system'
+    // })));
 
-    parentNode.nodes[parentNode.nodes.length - 1].messages = messages;
+    // parentNode.nodes[parentNode.nodes.length - 1].messages = messages;
+
     parentNode.nodes[parentNode.nodes.length - 1].indexLabel = [
       ...genealogy.map(n => n.index),
       nodeIndex
-    ].join('.')
+    ].join('.');
 
-    return { ...state, nodeTree: rawNodeTree };
-  }),
+    set({ nodeTree: rawNodeTree });
+  },
   deleteNode: (node: Node) => {
     if (!node.parentId) return false;
 
@@ -96,17 +93,6 @@ export const useNodes = create<NodeTreeState>((set, get) => ({
 
     return true;
   },
-  addMessageToNode: (id: string, message: Message) => {
-    const rawNodeTree = { ...get().nodeTree };
-
-    const node = findNodeById(id, rawNodeTree);
-
-    if (!node) return;
-
-    node.messages.push(message);
-
-    set({ nodeTree: rawNodeTree });
-  }
 }));
 
 export function findNodeById(id: string, node: Node): Node | null {
